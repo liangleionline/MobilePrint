@@ -92,11 +92,24 @@ public partial class App : Application
         _http = new HttpServer(_archive, _queue, _renderer, _config);
         _udp = new UdpDiscovery(_archive) { HttpPort = _config.ListenPort, BroadcastPort = 8081 };
 
-        // tray icon
+        // tray icon - load from embedded resource
+        var iconStream = System.Reflection.Assembly.GetExecutingAssembly()
+            .GetManifestResourceStream("MobilePrint.Server.icon.png");
+        System.Drawing.Icon trayIcon;
+        if (iconStream != null)
+        {
+            using var ms = new MemoryStream();
+            iconStream.CopyTo(ms);
+            trayIcon = System.Drawing.Icon.FromHandle(new System.Drawing.Bitmap(ms.ToArray()).GetHicon());
+        }
+        else
+        {
+            trayIcon = System.Drawing.SystemIcons.Application;
+        }
         _tray = new TaskbarIcon
         {
-            Icon = System.Drawing.SystemIcons.Application,
-            ToolTipText = "MobilePrint 打印服务"
+            Icon = trayIcon,
+            ToolTipText = "MobilePrint 打印服务 v1.1.0"
         };
         var menu = new System.Windows.Controls.ContextMenu();
         var miStart = new System.Windows.Controls.MenuItem { Header = "开启服务" };

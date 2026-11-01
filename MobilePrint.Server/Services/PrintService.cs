@@ -97,6 +97,20 @@ public class PrintService
         doc.DefaultPageSettings.Landscape = task.Parameters.Orientation == Orientation.Landscape;
         doc.DocumentName = $"MobilePrint-{task.FileName}";
 
+        // Explicitly set paper to A4 (210x297mm = 827x1169 in 0.01 inch units)
+        foreach (PaperSize ps in doc.PrinterSettings.PaperSizes)
+        {
+            if (ps.PaperName.Contains("A4", StringComparison.OrdinalIgnoreCase) ||
+                (ps.Width == 827 && ps.Height == 1169))
+            {
+                doc.DefaultPageSettings.PaperSize = ps;
+                Log($"纸张: {ps.PaperName} ({ps.Width/100.0*25.4:F0}x{ps.Height/100.0*25.4:F0}mm)");
+                break;
+            }
+        }
+        // Set margins to 0 so we control them via the bitmap
+        doc.DefaultPageSettings.Margins = new Margins(0, 0, 0, 0);
+
         int currentPageIdx = 0;
         var pageBitmaps = new List<Bitmap>();
 
@@ -121,15 +135,11 @@ public class PrintService
                 if (currentPageIdx < pageBitmaps.Count)
                 {
                     var bmp = pageBitmaps[currentPageIdx];
-                    // Draw to fill the printer's physical printable area (not MarginBounds,
-                    // because our bitmap already has margins baked in and we don't want double margins)
-                    float hx = e.PageSettings.HardMarginX;
-                    float hy = e.PageSettings.HardMarginY;
-                    float pw = e.PageBounds.Width - hx * 2;
-                    float ph = e.PageBounds.Height - hy * 2;
-                    if (pw < 1) pw = e.PageBounds.Width;
-                    if (ph < 1) ph = e.PageBounds.Height;
-                    e.Graphics.DrawImage(bmp, hx, hy, pw, ph);
+                    // Draw to FULL physical page (PageBounds), not MarginBounds.
+                    // Our bitmap is exactly A4, so it maps 1:1 to the paper.
+                    // The printer clips whatever falls outside its hard printable area.
+                    // This ensures the content is centered on the physical page.
+                    e.Graphics.DrawImage(bmp, e.PageBounds);
                     currentPageIdx++;
                     e.HasMorePages = currentPageIdx < pageBitmaps.Count;
                 }
