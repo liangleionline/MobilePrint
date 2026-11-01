@@ -64,12 +64,14 @@ public partial class App : Application
         var miStop = new System.Windows.Controls.MenuItem { Header = "停止服务" };
         var miRestart = new System.Windows.Controls.MenuItem { Header = "重启服务" };
         var miQueue = new System.Windows.Controls.MenuItem { Header = "查看队列" };
+        var miPort = new System.Windows.Controls.MenuItem { Header = "端口设置" };
         var miExit = new System.Windows.Controls.MenuItem { Header = "退出" };
 
         miStart.Click += async (s, ev) => await StartServiceAsync();
         miStop.Click += async (s, ev) => await StopServiceAsync();
         miRestart.Click += async (s, ev) => await RestartServiceAsync();
         miQueue.Click += (s, ev) => ShowQueueWindow();
+        miPort.Click += (s, ev) => ShowPortSettings();
         miExit.Click += (s, ev) => ExitApp();
 
         menu.Items.Add(miStart);
@@ -77,6 +79,7 @@ public partial class App : Application
         menu.Items.Add(miRestart);
         menu.Items.Add(new System.Windows.Controls.Separator());
         menu.Items.Add(miQueue);
+        menu.Items.Add(miPort);
         menu.Items.Add(new System.Windows.Controls.Separator());
         menu.Items.Add(miExit);
         _tray.ContextMenu = menu;
@@ -138,6 +141,23 @@ public partial class App : Application
         {
             _queueWindow.Activate();
         }
+    }
+
+    private async void ShowPortSettings()
+    {
+        var win = new PortSettingsWindow(_config.ListenPort);
+        win.OnSaved += async () =>
+        {
+            _config.ListenPort = win.NewPort;
+            // save config
+            string configPath = Path.Combine(AppContext.BaseDirectory, "appconfig.json");
+            File.WriteAllText(configPath, JsonSerializer.Serialize(_config, new JsonSerializerOptions { WriteIndented = true }));
+            _udp!.HttpPort = _config.ListenPort;
+            _archive?.Log("端口已改为: " + _config.ListenPort);
+            await RestartServiceAsync();
+            MessageBox.Show($"端口已改为 {_config.ListenPort}，服务已重启", "MobilePrint", MessageBoxButton.OK, MessageBoxImage.Information);
+        };
+        win.ShowDialog();
     }
 
     private async void ExitApp()

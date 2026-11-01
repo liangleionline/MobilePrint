@@ -6,9 +6,19 @@
         android:orientation="vertical">
 
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="服务器IP:" android:textSize="14sp"/>
-        <EditText android:id="@+id/etServerIp" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:hint="192.168.1.100" android:inputType="text"/>
+            android:text="服务器地址(IP:端口):" android:textSize="14sp"/>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:layout_marginTop="4dp">
+            <EditText android:id="@+id/etServerAddr" android:layout_width="0dp"
+                android:layout_height="wrap_content" android:layout_weight="1"
+                android:hint="192.168.1.197:8899" android:inputType="text"/>
+            <Button android:id="@+id/btnTestConn" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:text="测试连接"
+                android:layout_marginStart="8dp" android:backgroundTint="#2196F3"/>
+        </LinearLayout>
+        <TextView android:id="@+id/tvConnStatus" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:text="未连接" android:textSize="12sp"
+            android:textColor="#999" android:layout_marginTop="4dp"/>
 
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="Token:" android:textSize="14sp" android:layout_marginTop="8dp"/>
@@ -16,7 +26,8 @@
             android:layout_height="wrap_content" android:hint="123456" android:inputType="text"/>
 
         <Button android:id="@+id/btnSelectFile" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:text="选择文件" android:layout_marginTop="12dp"/>
+            android:layout_height="wrap_content" android:text="选择文件" android:layout_marginTop="12dp"
+            android:enabled="false"/>
         <TextView android:id="@+id/tvFileName" android:layout_width="wrap_content"
             android:layout_height="wrap_content" android:text="未选择文件" android:layout_marginTop="4dp"/>
 
@@ -55,10 +66,15 @@
 
         <Button android:id="@+id/btnPrint" android:layout_width="match_parent"
             android:layout_height="wrap_content" android:text="打印"
-            android:layout_marginTop="12dp" android:backgroundTint="#4CAF50"/>
+            android:layout_marginTop="12dp" android:backgroundTint="#4CAF50"
+            android:enabled="false"/>
 
         <TextView android:id="@+id/tvStatus" android:layout_width="wrap_content"
             android:layout_height="wrap_content" android:text="" android:layout_marginTop="8dp"
             android:textSize="14sp"/>
+
+        <Button android:id="@+id/btnViewLog" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:text="查看日志"
+            android:layout_marginTop="24dp" android:backgroundTint="#607D8B"/>
     </LinearLayout>
 </ScrollView>
