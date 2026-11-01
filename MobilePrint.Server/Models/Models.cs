@@ -56,7 +56,7 @@ public class PrintTask
 
 public class AppConfig
 {
-    public int ListenPort { get; set; } = 80;
+    public int ListenPort { get; set; } = 8899;
     public string AuthToken { get; set; } = "123456";
     public bool AutoCleanArchive { get; set; } = false;
     public int AutoCleanDays { get; set; } = 30;

@@ -130,7 +130,7 @@ class MainActivity : AppCompatActivity() {
             bytes = compressImage(bytes, 1920, 75)
         }
 
-        val baseUrl = "http://$ip:80"
+        val baseUrl = "http://$ip:8899"
         val body = MultipartBody.Builder().setType(MultipartBody.FORM)
             .addFormDataPart("file", fileName, bytes.toRequestBody("application/octet-stream".toMediaType()))
             .addFormDataPart("copies", etCopies.text.toString().ifEmpty { "1" })
