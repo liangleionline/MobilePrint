@@ -1,4 +1,5 @@
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using Hardcodet.Wpf.TaskbarNotification;
 using System.Text.Json;
@@ -10,6 +11,41 @@ namespace MobilePrint.Server;
 
 public partial class App : Application
 {
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr LoadLibrary(string lpFileName);
+
+    private static void PreloadNativeDlls()
+    {
+        // Search locations for pdfium.dll
+        var candidates = new List<string>();
+
+        // 1. Next to EXE (and x86 subfolder)
+        string exeDir = Path.GetDirectoryName(Environment.ProcessPath!) ?? AppContext.BaseDirectory;
+        candidates.Add(Path.Combine(exeDir, "pdfium.dll"));
+        candidates.Add(Path.Combine(exeDir, "x86", "pdfium.dll"));
+
+        // 2. .NET self-extraction temp dir (recursive search)
+        var dotnetTemp = Path.Combine(Path.GetTempPath(), ".net");
+        if (Directory.Exists(dotnetTemp))
+        {
+            try
+            {
+                foreach (var f in Directory.GetFiles(dotnetTemp, "pdfium.dll", SearchOption.AllDirectories))
+                    candidates.Add(f);
+            }
+            catch { }
+        }
+
+        foreach (var path in candidates)
+        {
+            if (File.Exists(path))
+            {
+                LoadLibrary(path);
+                return;
+            }
+        }
+    }
+
     private TaskbarIcon? _tray;
     private ArchiveManager? _archive;
     private TaskQueue? _queue;
@@ -25,8 +61,11 @@ public partial class App : Application
 
     private void Application_Startup(object sender, StartupEventArgs e)
     {
-        // load config
-        string configPath = Path.Combine(AppContext.BaseDirectory, "appconfig.json");
+        PreloadNativeDlls();
+
+        // load config - use EXE directory (not temp extraction dir for single-file)
+        string exeDir = Path.GetDirectoryName(Environment.ProcessPath!) ?? AppContext.BaseDirectory;
+        string configPath = Path.Combine(exeDir, "appconfig.json");
         try
         {
             if (File.Exists(configPath))
@@ -150,7 +189,8 @@ public partial class App : Application
         {
             _config.ListenPort = win.NewPort;
             // save config
-            string configPath = Path.Combine(AppContext.BaseDirectory, "appconfig.json");
+            string exeDir = Path.GetDirectoryName(Environment.ProcessPath!) ?? AppContext.BaseDirectory;
+            string configPath = Path.Combine(exeDir, "appconfig.json");
             File.WriteAllText(configPath, JsonSerializer.Serialize(_config, new JsonSerializerOptions { WriteIndented = true }));
             _udp!.HttpPort = _config.ListenPort;
             _archive?.Log("端口已改为: " + _config.ListenPort);
