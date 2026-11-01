@@ -121,8 +121,15 @@ public class PrintService
                 if (currentPageIdx < pageBitmaps.Count)
                 {
                     var bmp = pageBitmaps[currentPageIdx];
-                    e.Graphics.DrawImage(bmp, e.MarginBounds.X, e.MarginBounds.Y,
-                        e.MarginBounds.Width, e.MarginBounds.Height);
+                    // Draw to fill the printer's physical printable area (not MarginBounds,
+                    // because our bitmap already has margins baked in and we don't want double margins)
+                    float hx = e.PageSettings.HardMarginX;
+                    float hy = e.PageSettings.HardMarginY;
+                    float pw = e.PageBounds.Width - hx * 2;
+                    float ph = e.PageBounds.Height - hy * 2;
+                    if (pw < 1) pw = e.PageBounds.Width;
+                    if (ph < 1) ph = e.PageBounds.Height;
+                    e.Graphics.DrawImage(bmp, hx, hy, pw, ph);
                     currentPageIdx++;
                     e.HasMorePages = currentPageIdx < pageBitmaps.Count;
                 }
