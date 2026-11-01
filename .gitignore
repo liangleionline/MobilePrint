@@ -1,0 +1,9 @@
+bin/
+obj/
+.gradle/
+.idea/
+*.iml
+local.properties
+.DS_Store
+publish/win-x64/
+temp/

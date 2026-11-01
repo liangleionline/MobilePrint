@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MobilePrint</string>
+    <string-array name="orientation_items">
+        <item>纵向</item>
+        <item>横向</item>
+    </string-array>
+    <string-array name="scale_items">
+        <item>适合A4</item>
+        <item>原始大小</item>
+        <item>自定义</item>
+    </string-array>
+</resources>
