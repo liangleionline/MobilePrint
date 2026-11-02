@@ -72,9 +72,5 @@
         <TextView android:id="@+id/tvStatus" android:layout_width="wrap_content"
             android:layout_height="wrap_content" android:text="" android:layout_marginTop="8dp"
             android:textSize="14sp"/>
-
-        <Button android:id="@+id/btnViewLog" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:text="查看日志"
-            android:layout_marginTop="24dp" android:backgroundTint="#607D8B"/>
     </LinearLayout>
 </ScrollView>

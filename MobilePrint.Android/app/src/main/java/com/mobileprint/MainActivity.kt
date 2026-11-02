@@ -1,6 +1,5 @@
 package com.mobileprint
 
-import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -17,9 +16,6 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
@@ -38,14 +34,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var swCompress: Switch
     private lateinit var btnPrint: Button
     private lateinit var tvStatus: TextView
-    private lateinit var btnViewLog: Button
 
     private var connected = false
     private var baseUrl = ""
     private var selectedFileUri: Uri? = null
     private var fileName: String = ""
-    private val logLines = mutableListOf<String>()
-    private val timeFmt = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(8, TimeUnit.SECONDS)
@@ -79,15 +72,13 @@ class MainActivity : AppCompatActivity() {
         swCompress = findViewById(R.id.swCompress)
         btnPrint = findViewById(R.id.btnPrint)
         tvStatus = findViewById(R.id.tvStatus)
-        btnViewLog = findViewById(R.id.btnViewLog)
 
-        etServerAddr.setText(getSharedPreferences("mp", MODE_PRIVATE).getString("addr", "192.168.1.197:8899"))
+        etServerAddr.setText(getSharedPreferences("mp", MODE_PRIVATE).getString("addr", "192.168.0.197:5003"))
         etToken.setText(getSharedPreferences("mp", MODE_PRIVATE).getString("token", "123456"))
 
         btnTestConn.setOnClickListener { testConnection() }
         btnSelectFile.setOnClickListener { filePicker.launch("*/*") }
         btnPrint.setOnClickListener { doPrint() }
-        btnViewLog.setOnClickListener { showLog() }
 
         val orientationAdapter = ArrayAdapter.createFromResource(this, R.array.orientation_items, android.R.layout.simple_spinner_item)
         orientationAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
@@ -96,14 +87,6 @@ class MainActivity : AppCompatActivity() {
         val scaleAdapter = ArrayAdapter.createFromResource(this, R.array.scale_items, android.R.layout.simple_spinner_item)
         scaleAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spScaleMode.adapter = scaleAdapter
-
-        addLog("APP v1.1.0 启动")
-    }
-
-    private fun addLog(msg: String) {
-        val line = "[${timeFmt.format(Date())}] $msg"
-        logLines.add(line)
-        println("MobilePrint: $line")
     }
 
     private fun setConnected(ok: Boolean) {
@@ -123,7 +106,6 @@ class MainActivity : AppCompatActivity() {
         btnTestConn.isEnabled = false
         btnTestConn.text = "测试中..."
         tvConnStatus.text = "测试中..."
-        addLog("测试连接: $baseUrl")
 
         lifecycleScope.launch {
             try {
@@ -152,13 +134,11 @@ class MainActivity : AppCompatActivity() {
                 }
                 if (result.first) {
                     setConnected(true)
-                    addLog("连接成功 - ${result.second}")
                     toast("连接成功!")
                     getSharedPreferences("mp", MODE_PRIVATE).edit()
                         .putString("addr", addr).putString("token", token).apply()
                 } else {
                     setConnected(false)
-                    addLog("连接失败 - ${result.second} ${result.third}")
                     tvConnStatus.text = "失败: ${result.second}"
                     tvConnStatus.setTextColor(0xFFF44336.toInt())
                     toast("连接失败: ${result.second}")
@@ -166,7 +146,6 @@ class MainActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 setConnected(false)
                 val msg = e.message ?: "未知错误"
-                addLog("连接异常: $msg")
                 tvConnStatus.text = "失败: $msg"
                 tvConnStatus.setTextColor(0xFFF44336.toInt())
                 toast("连接失败: $msg")
@@ -175,18 +154,6 @@ class MainActivity : AppCompatActivity() {
                 btnTestConn.text = "测试连接"
             }
         }
-    }
-
-    private fun showLog() {
-        val text = if (logLines.isEmpty()) "暂无日志" else logLines.joinToString("\n")
-        Toast.makeText(this, text, Toast.LENGTH_LONG).show()
-        // also show in a dialog
-        android.app.AlertDialog.Builder(this)
-            .setTitle("连接日志 (v1.1.0)")
-            .setMessage(text)
-            .setPositiveButton("关闭", null)
-            .setNeutralButton("清空") { _, _ -> logLines.clear() }
-            .show()
     }
 
     private fun queryName(uri: Uri): String? {
@@ -204,18 +171,15 @@ class MainActivity : AppCompatActivity() {
 
         tvStatus.text = "上传中..."
         btnPrint.isEnabled = false
-        addLog("开始上传: $fileName")
 
         lifecycleScope.launch {
             try {
                 val result = withContext(Dispatchers.IO) { uploadFile(token) }
                 tvStatus.text = result
-                addLog(result)
                 toast(result)
             } catch (e: Exception) {
                 val msg = "失败: ${e.message}"
                 tvStatus.text = msg
-                addLog(msg)
                 toast(msg)
             } finally {
                 btnPrint.isEnabled = true
@@ -229,7 +193,6 @@ class MainActivity : AppCompatActivity() {
 
         if (swCompress.isChecked && ext in listOf("jpg", "jpeg", "png", "bmp", "webp")) {
             bytes = compressImage(bytes, 1920, 75)
-            addLog("图片已压缩: ${bytes.size / 1024}KB")
         }
 
         val body = MultipartBody.Builder().setType(MultipartBody.FORM)
@@ -252,7 +215,6 @@ class MainActivity : AppCompatActivity() {
 
         client.newCall(req).execute().use { resp ->
             val respBody = resp.body?.string() ?: ""
-            addLog("服务器响应: HTTP ${resp.code} ${respBody.take(200)}")
             val json = JSONObject(respBody)
             if (json.optInt("code") == 200) {
                 val data = json.getJSONObject("data")

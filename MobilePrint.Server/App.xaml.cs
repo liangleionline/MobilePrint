@@ -92,22 +92,11 @@ public partial class App : Application
         _http = new HttpServer(_archive, _queue, _renderer, _config);
         _udp = new UdpDiscovery(_archive) { HttpPort = _config.ListenPort, BroadcastPort = 8081 };
 
-        // tray icon - load from EXE directory
-        string exeDir = Path.GetDirectoryName(Environment.ProcessPath!) ?? AppContext.BaseDirectory;
-        string iconPath = Path.Combine(exeDir, "icon.png");
-        System.Drawing.Icon trayIcon;
-        if (File.Exists(iconPath))
-        {
-            trayIcon = System.Drawing.Icon.FromHandle(new System.Drawing.Bitmap(iconPath).GetHicon());
-        }
-        else
-        {
-            trayIcon = System.Drawing.SystemIcons.Application;
-        }
+        // tray icon - use the EXE's embedded icon (app.ico)
         _tray = new TaskbarIcon
         {
-            Icon = trayIcon,
-            ToolTipText = "MobilePrint 打印服务 v1.1.1"
+            Icon = System.Drawing.Icon.ExtractAssociatedIcon(Environment.ProcessPath!),
+            ToolTipText = "MobilePrint 打印服务 v1.1.2"
         };
         var menu = new System.Windows.Controls.ContextMenu();
         var miStart = new System.Windows.Controls.MenuItem { Header = "开启服务" };
