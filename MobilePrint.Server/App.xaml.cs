@@ -92,15 +92,13 @@ public partial class App : Application
         _http = new HttpServer(_archive, _queue, _renderer, _config);
         _udp = new UdpDiscovery(_archive) { HttpPort = _config.ListenPort, BroadcastPort = 8081 };
 
-        // tray icon - load from embedded resource
-        var iconStream = System.Reflection.Assembly.GetExecutingAssembly()
-            .GetManifestResourceStream("MobilePrint.Server.icon.png");
+        // tray icon - load from EXE directory
+        string exeDir = Path.GetDirectoryName(Environment.ProcessPath!) ?? AppContext.BaseDirectory;
+        string iconPath = Path.Combine(exeDir, "icon.png");
         System.Drawing.Icon trayIcon;
-        if (iconStream != null)
+        if (File.Exists(iconPath))
         {
-            using var ms = new MemoryStream();
-            iconStream.CopyTo(ms);
-            trayIcon = System.Drawing.Icon.FromHandle(new System.Drawing.Bitmap(ms.ToArray()).GetHicon());
+            trayIcon = System.Drawing.Icon.FromHandle(new System.Drawing.Bitmap(iconPath).GetHicon());
         }
         else
         {
@@ -109,7 +107,7 @@ public partial class App : Application
         _tray = new TaskbarIcon
         {
             Icon = trayIcon,
-            ToolTipText = "MobilePrint 打印服务 v1.1.0"
+            ToolTipText = "MobilePrint 打印服务 v1.1.1"
         };
         var menu = new System.Windows.Controls.ContextMenu();
         var miStart = new System.Windows.Controls.MenuItem { Header = "开启服务" };
