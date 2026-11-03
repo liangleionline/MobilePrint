@@ -20,8 +20,12 @@ import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
 
+    companion object {
+        private const val TOKEN = "123456"
+    }
+
     private lateinit var etServerAddr: EditText
-    private lateinit var etToken: EditText
+    private lateinit var swHttps: Switch
     private lateinit var btnTestConn: Button
     private lateinit var tvConnStatus: TextView
     private lateinit var btnSelectFile: Button
@@ -59,7 +63,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         etServerAddr = findViewById(R.id.etServerAddr)
-        etToken = findViewById(R.id.etToken)
+        swHttps = findViewById(R.id.swHttps)
         btnTestConn = findViewById(R.id.btnTestConn)
         tvConnStatus = findViewById(R.id.tvConnStatus)
         btnSelectFile = findViewById(R.id.btnSelectFile)
@@ -73,8 +77,9 @@ class MainActivity : AppCompatActivity() {
         btnPrint = findViewById(R.id.btnPrint)
         tvStatus = findViewById(R.id.tvStatus)
 
-        etServerAddr.setText(getSharedPreferences("mp", MODE_PRIVATE).getString("addr", "192.168.0.197:5003"))
-        etToken.setText(getSharedPreferences("mp", MODE_PRIVATE).getString("token", "123456"))
+        val prefs = getSharedPreferences("mp", MODE_PRIVATE)
+        etServerAddr.setText(prefs.getString("addr", "192.168.0.197:5003"))
+        swHttps.isChecked = prefs.getBoolean("https", false)
 
         btnTestConn.setOnClickListener { testConnection() }
         btnSelectFile.setOnClickListener { filePicker.launch("*/*") }
@@ -99,10 +104,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun testConnection() {
         val addr = etServerAddr.text.toString().trim()
-        val token = etToken.text.toString().trim()
         if (addr.isEmpty()) { toast("请输入服务器地址"); return }
 
-        baseUrl = "http://$addr"
+        val scheme = if (swHttps.isChecked) "https" else "http"
+        baseUrl = "$scheme://$addr"
         btnTestConn.isEnabled = false
         btnTestConn.text = "测试中..."
         tvConnStatus.text = "测试中..."
@@ -112,7 +117,7 @@ class MainActivity : AppCompatActivity() {
                 val result = withContext(Dispatchers.IO) {
                     val req = Request.Builder()
                         .url("$baseUrl/api/heartbeat")
-                        .header("Authorization", "Bearer $token")
+                        .header("Authorization", "Bearer $TOKEN")
                         .get()
                         .build()
                     client.newCall(req).execute().use { resp ->
@@ -136,7 +141,8 @@ class MainActivity : AppCompatActivity() {
                     setConnected(true)
                     toast("连接成功!")
                     getSharedPreferences("mp", MODE_PRIVATE).edit()
-                        .putString("addr", addr).putString("token", token).apply()
+                        .putString("addr", addr)
+                        .putBoolean("https", swHttps.isChecked).apply()
                 } else {
                     setConnected(false)
                     tvConnStatus.text = "失败: ${result.second}"
@@ -167,14 +173,13 @@ class MainActivity : AppCompatActivity() {
     private fun doPrint() {
         if (!connected) { toast("请先测试连接"); return }
         if (selectedFileUri == null) { toast("请先选择文件"); return }
-        val token = etToken.text.toString().trim()
 
         tvStatus.text = "上传中..."
         btnPrint.isEnabled = false
 
         lifecycleScope.launch {
             try {
-                val result = withContext(Dispatchers.IO) { uploadFile(token) }
+                val result = withContext(Dispatchers.IO) { uploadFile() }
                 tvStatus.text = result
                 toast(result)
             } catch (e: Exception) {
@@ -187,7 +192,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun uploadFile(token: String): String {
+    private fun uploadFile(): String {
         val ext = fileName.substringAfterLast('.', "").lowercase()
         var bytes = contentResolver.openInputStream(selectedFileUri!!)!!.use { it.readBytes() }
 
@@ -209,7 +214,7 @@ class MainActivity : AppCompatActivity() {
 
         val req = Request.Builder()
             .url("$baseUrl/api/print/upload")
-            .header("Authorization", "Bearer $token")
+            .header("Authorization", "Bearer $TOKEN")
             .post(body)
             .build()
 
