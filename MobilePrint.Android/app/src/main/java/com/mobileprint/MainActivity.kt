@@ -80,6 +80,10 @@ class MainActivity : AppCompatActivity() {
         val prefs = getSharedPreferences("mp", MODE_PRIVATE)
         etServerAddr.setText(prefs.getString("addr", "192.168.0.197:5003"))
         swHttps.isChecked = prefs.getBoolean("https", false)
+        etCopies.setText(prefs.getString("copies", "1"))
+        etMargin.setText(prefs.getString("margin", "10"))
+        etPageRange.setText(prefs.getString("pageRange", ""))
+        swCompress.isChecked = prefs.getBoolean("compress", true)
 
         btnTestConn.setOnClickListener { testConnection() }
         btnSelectFile.setOnClickListener { filePicker.launch("*/*") }
@@ -88,10 +92,24 @@ class MainActivity : AppCompatActivity() {
         val orientationAdapter = ArrayAdapter.createFromResource(this, R.array.orientation_items, android.R.layout.simple_spinner_item)
         orientationAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spOrientation.adapter = orientationAdapter
+        spOrientation.setSelection(prefs.getInt("orientation", 0))
 
         val scaleAdapter = ArrayAdapter.createFromResource(this, R.array.scale_items, android.R.layout.simple_spinner_item)
         scaleAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spScaleMode.adapter = scaleAdapter
+        spScaleMode.setSelection(prefs.getInt("scaleMode", 0))
+    }
+
+    override fun onPause() {
+        super.onPause()
+        getSharedPreferences("mp", MODE_PRIVATE).edit()
+            .putString("copies", etCopies.text.toString())
+            .putString("margin", etMargin.text.toString())
+            .putString("pageRange", etPageRange.text.toString())
+            .putInt("orientation", spOrientation.selectedItemPosition)
+            .putInt("scaleMode", spScaleMode.selectedItemPosition)
+            .putBoolean("compress", swCompress.isChecked)
+            .apply()
     }
 
     private fun setConnected(ok: Boolean) {
