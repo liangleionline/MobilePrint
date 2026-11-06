@@ -5,7 +5,9 @@ obj/
 *.iml
 local.properties
 .DS_Store
-publish/win-x64/
+publish/
 temp/
+*.zip
+*.apk
 
 build/
