@@ -24,10 +24,11 @@
             android:textColor="#999" android:layout_marginTop="4dp"/>
 
         <Button android:id="@+id/btnSelectFile" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:text="选择文件" android:layout_marginTop="12dp"
+            android:layout_height="wrap_content" android:text="选择文件(可多选)" android:layout_marginTop="12dp"
             android:enabled="false"/>
-        <TextView android:id="@+id/tvFileName" android:layout_width="wrap_content"
-            android:layout_height="wrap_content" android:text="未选择文件" android:layout_marginTop="4dp"/>
+        <TextView android:id="@+id/tvFileName" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:text="未选择文件" android:layout_marginTop="4dp"
+            android:maxLines="6" android:scrollbars="vertical" android:textSize="13sp"/>
 
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="horizontal" android:layout_marginTop="8dp">
@@ -67,8 +68,8 @@
             android:layout_marginTop="12dp" android:backgroundTint="#4CAF50"
             android:enabled="false"/>
 
-        <TextView android:id="@+id/tvStatus" android:layout_width="wrap_content"
+        <TextView android:id="@+id/tvStatus" android:layout_width="match_parent"
             android:layout_height="wrap_content" android:text="" android:layout_marginTop="8dp"
-            android:textSize="14sp"/>
+            android:maxLines="8" android:scrollbars="vertical" android:textSize="14sp"/>
     </LinearLayout>
 </ScrollView>

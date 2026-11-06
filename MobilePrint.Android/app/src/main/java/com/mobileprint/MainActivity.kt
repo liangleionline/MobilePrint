@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
+import android.text.method.ScrollingMovementMethod
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -24,6 +25,8 @@ class MainActivity : AppCompatActivity() {
         private const val TOKEN = "123456"
     }
 
+    private data class PickedFile(val uri: Uri, val name: String)
+
     private lateinit var etServerAddr: EditText
     private lateinit var swHttps: Switch
     private lateinit var btnTestConn: Button
@@ -41,8 +44,7 @@ class MainActivity : AppCompatActivity() {
 
     private var connected = false
     private var baseUrl = ""
-    private var selectedFileUri: Uri? = null
-    private var fileName: String = ""
+    private val files = mutableListOf<PickedFile>()
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(8, TimeUnit.SECONDS)
@@ -50,11 +52,13 @@ class MainActivity : AppCompatActivity() {
         .readTimeout(60, TimeUnit.SECONDS)
         .build()
 
-    private val filePicker = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri?.let {
-            selectedFileUri = it
-            fileName = queryName(it) ?: "selected_file"
-            tvFileName.text = "已选: $fileName"
+    private val filePicker = registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        if (uris.isNotEmpty()) {
+            files.clear()
+            uris.forEach { uri ->
+                files.add(PickedFile(uri, queryName(uri) ?: "未命名文件"))
+            }
+            renderFileList()
         }
     }
 
@@ -77,6 +81,9 @@ class MainActivity : AppCompatActivity() {
         btnPrint = findViewById(R.id.btnPrint)
         tvStatus = findViewById(R.id.tvStatus)
 
+        tvFileName.movementMethod = ScrollingMovementMethod()
+        tvStatus.movementMethod = ScrollingMovementMethod()
+
         val prefs = getSharedPreferences("mp", MODE_PRIVATE)
         etServerAddr.setText(prefs.getString("addr", "192.168.0.197:5003"))
         swHttps.isChecked = prefs.getBoolean("https", false)
@@ -86,7 +93,7 @@ class MainActivity : AppCompatActivity() {
         swCompress.isChecked = prefs.getBoolean("compress", true)
 
         btnTestConn.setOnClickListener { testConnection() }
-        btnSelectFile.setOnClickListener { filePicker.launch("*/*") }
+        btnSelectFile.setOnClickListener { filePicker.launch(arrayOf("*/*")) }
         btnPrint.setOnClickListener { doPrint() }
 
         val orientationAdapter = ArrayAdapter.createFromResource(this, R.array.orientation_items, android.R.layout.simple_spinner_item)
@@ -110,6 +117,18 @@ class MainActivity : AppCompatActivity() {
             .putInt("scaleMode", spScaleMode.selectedItemPosition)
             .putBoolean("compress", swCompress.isChecked)
             .apply()
+    }
+
+    private fun renderFileList() {
+        if (files.isEmpty()) {
+            tvFileName.text = "未选择文件"
+            return
+        }
+        val sb = StringBuilder("已选 ${files.size} 个文件(按顺序打印):\n")
+        files.forEachIndexed { i, f ->
+            sb.append("${i + 1}. ${f.name}\n")
+        }
+        tvFileName.text = sb.toString().trimEnd()
     }
 
     private fun setConnected(ok: Boolean) {
@@ -190,36 +209,53 @@ class MainActivity : AppCompatActivity() {
 
     private fun doPrint() {
         if (!connected) { toast("请先测试连接"); return }
-        if (selectedFileUri == null) { toast("请先选择文件"); return }
+        if (files.isEmpty()) { toast("请先选择文件"); return }
 
-        tvStatus.text = "上传中..."
+        val total = files.size
         btnPrint.isEnabled = false
+        btnSelectFile.isEnabled = false
+        tvStatus.text = "准备上传 $total 个文件..."
 
         lifecycleScope.launch {
-            try {
-                val result = withContext(Dispatchers.IO) { uploadFile() }
-                tvStatus.text = result
-                toast(result)
-            } catch (e: Exception) {
-                val msg = "失败: ${e.message}"
-                tvStatus.text = msg
-                toast(msg)
-            } finally {
-                btnPrint.isEnabled = true
+            var success = 0
+            val failures = mutableListOf<String>()
+
+            for ((idx, f) in files.withIndex()) {
+                tvStatus.text = "正在上传 ${idx + 1}/$total: ${f.name}"
+                try {
+                    val res = withContext(Dispatchers.IO) { uploadFile(f) }
+                    success++
+                    tvStatus.text = "已完成 ${idx + 1}/$total: ${f.name} → ${res}"
+                } catch (e: Exception) {
+                    val msg = e.message ?: "未知错误"
+                    failures.add("${f.name}: $msg")
+                    tvStatus.text = "失败 ${idx + 1}/$total: ${f.name} → $msg"
+                }
             }
+
+            val summary = if (failures.isEmpty()) {
+                "全部完成：$success/$total 个文件已加入打印队列"
+            } else {
+                "完成 $success/$total 个，失败 ${failures.size} 个:\n" + failures.joinToString("\n")
+            }
+            tvStatus.text = summary
+            toast(summary)
+
+            btnPrint.isEnabled = true
+            btnSelectFile.isEnabled = true
         }
     }
 
-    private fun uploadFile(): String {
-        val ext = fileName.substringAfterLast('.', "").lowercase()
-        var bytes = contentResolver.openInputStream(selectedFileUri!!)!!.use { it.readBytes() }
+    private fun uploadFile(f: PickedFile): String {
+        val ext = f.name.substringAfterLast('.', "").lowercase()
+        var bytes = contentResolver.openInputStream(f.uri)!!.use { it.readBytes() }
 
         if (swCompress.isChecked && ext in listOf("jpg", "jpeg", "png", "bmp", "webp")) {
             bytes = compressImage(bytes, 1920, 75)
         }
 
         val body = MultipartBody.Builder().setType(MultipartBody.FORM)
-            .addFormDataPart("file", fileName, bytes.toRequestBody("application/octet-stream".toMediaType()))
+            .addFormDataPart("file", f.name, bytes.toRequestBody("application/octet-stream".toMediaType()))
             .addFormDataPart("copies", etCopies.text.toString().ifEmpty { "1" })
             .addFormDataPart("orientation", if (spOrientation.selectedItemPosition == 1) "Landscape" else "Portrait")
             .addFormDataPart("pageRange", etPageRange.text.toString())
@@ -241,7 +277,7 @@ class MainActivity : AppCompatActivity() {
             val json = JSONObject(respBody)
             if (json.optInt("code") == 200) {
                 val data = json.getJSONObject("data")
-                return "上传成功! 任务ID: ${data.optString("taskId")}, 共${data.optInt("totalPage")}页"
+                return "任务ID ${data.optString("taskId")}, 共${data.optInt("totalPage")}页"
             } else {
                 throw Exception(json.optString("msg", "未知错误"))
             }

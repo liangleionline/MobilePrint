@@ -9,9 +9,9 @@
     <ApplicationIcon>app.ico</ApplicationIcon>
     <AssemblyName>MobilePrint.Server</AssemblyName>
     <RootNamespace>MobilePrint.Server</RootNamespace>
-    <Version>1.1.2</Version>
-    <FileVersion>1.1.2.0</FileVersion>
-    <AssemblyVersion>1.1.2.0</AssemblyVersion>
+    <Version>1.1.5</Version>
+    <FileVersion>1.1.5.0</FileVersion>
+    <AssemblyVersion>1.1.5.0</AssemblyVersion>
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>

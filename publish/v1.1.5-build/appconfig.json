@@ -1,0 +1,7 @@
+{
+  "ListenPort": 5003,
+  "AuthToken": "123456",
+  "AutoCleanArchive": false,
+  "AutoCleanDays": 30,
+  "PrinterName": "HP LaserJet 1020"
+}
