@@ -96,7 +96,7 @@ public partial class App : Application
         _tray = new TaskbarIcon
         {
             Icon = System.Drawing.Icon.ExtractAssociatedIcon(Environment.ProcessPath!),
-            ToolTipText = "MobilePrint 打印服务 v1.1.5"
+            ToolTipText = "MobilePrint 打印服务 v1.1.6"
         };
         var menu = new System.Windows.Controls.ContextMenu();
         var miStart = new System.Windows.Controls.MenuItem { Header = "开启服务" };
@@ -104,6 +104,7 @@ public partial class App : Application
         var miRestart = new System.Windows.Controls.MenuItem { Header = "重启服务" };
         var miQueue = new System.Windows.Controls.MenuItem { Header = "查看队列" };
         var miPort = new System.Windows.Controls.MenuItem { Header = "端口设置" };
+        var miTestPage = new System.Windows.Controls.MenuItem { Header = "打印对齐测试页" };
         var miExit = new System.Windows.Controls.MenuItem { Header = "退出" };
 
         miStart.Click += async (s, ev) => await StartServiceAsync();
@@ -111,6 +112,15 @@ public partial class App : Application
         miRestart.Click += async (s, ev) => await RestartServiceAsync();
         miQueue.Click += (s, ev) => ShowQueueWindow();
         miPort.Click += (s, ev) => ShowPortSettings();
+        miTestPage.Click += (s, ev) =>
+        {
+            try { _printService?.PrintCalibrationPage(); }
+            catch (Exception ex)
+            {
+                MessageBox.Show("打印测试页失败: " + ex.Message, "MobilePrint",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        };
         miExit.Click += (s, ev) => ExitApp();
 
         menu.Items.Add(miStart);
@@ -119,6 +129,7 @@ public partial class App : Application
         menu.Items.Add(new System.Windows.Controls.Separator());
         menu.Items.Add(miQueue);
         menu.Items.Add(miPort);
+        menu.Items.Add(miTestPage);
         menu.Items.Add(new System.Windows.Controls.Separator());
         menu.Items.Add(miExit);
         _tray.ContextMenu = menu;
@@ -135,7 +146,7 @@ public partial class App : Application
             _queue?.Start();
             _udp?.Start();
             await (_http?.StartAsync() ?? Task.CompletedTask);
-            _tray!.ToolTipText = "MobilePrint 打印服务 (运行中)";
+            _tray!.ToolTipText = "MobilePrint 打印服务 v1.1.6 (运行中)";
             _archive?.Log("HTTP服务已启动，端口: " + _config.ListenPort);
         }
         catch (Exception ex)
@@ -152,7 +163,7 @@ public partial class App : Application
             _udp?.Stop();
             await (_http?.StopAsync() ?? Task.CompletedTask);
             _queue?.Stop();
-            _tray!.ToolTipText = "MobilePrint 打印服务 (已停止)";
+            _tray!.ToolTipText = "MobilePrint 打印服务 v1.1.6 (已停止)";
             _archive?.Log("HTTP服务已停止");
         }
         catch (Exception ex)
