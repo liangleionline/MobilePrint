@@ -112,6 +112,8 @@ public class TaskQueue
             {
                 task.PdfPath = filePath;
                 totalPages = _renderer.GetPageCount(filePath);
+                // 入队前先校验页码范围，格式错误/全部超界直接在上传阶段返回，避免后台静默失败
+                PageRangeParser.Parse(p.PageRange, totalPages);
             }
             else if (ext is ".jpg" or ".jpeg" or ".png" or ".bmp" or ".webp" or ".gif")
             {

@@ -96,7 +96,7 @@ public partial class App : Application
         _tray = new TaskbarIcon
         {
             Icon = System.Drawing.Icon.ExtractAssociatedIcon(Environment.ProcessPath!),
-            ToolTipText = "MobilePrint 打印服务 v1.1.6"
+            ToolTipText = "MobilePrint 打印服务 v1.1.7"
         };
         var menu = new System.Windows.Controls.ContextMenu();
         var miStart = new System.Windows.Controls.MenuItem { Header = "开启服务" };
@@ -146,7 +146,7 @@ public partial class App : Application
             _queue?.Start();
             _udp?.Start();
             await (_http?.StartAsync() ?? Task.CompletedTask);
-            _tray!.ToolTipText = "MobilePrint 打印服务 v1.1.6 (运行中)";
+            _tray!.ToolTipText = "MobilePrint 打印服务 v1.1.7 (运行中)";
             _archive?.Log("HTTP服务已启动，端口: " + _config.ListenPort);
         }
         catch (Exception ex)
@@ -163,7 +163,7 @@ public partial class App : Application
             _udp?.Stop();
             await (_http?.StopAsync() ?? Task.CompletedTask);
             _queue?.Stop();
-            _tray!.ToolTipText = "MobilePrint 打印服务 v1.1.6 (已停止)";
+            _tray!.ToolTipText = "MobilePrint 打印服务 v1.1.7 (已停止)";
             _archive?.Log("HTTP服务已停止");
         }
         catch (Exception ex)

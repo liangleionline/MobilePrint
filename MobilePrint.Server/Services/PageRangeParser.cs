@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace MobilePrint.Server.Services;
@@ -7,6 +8,7 @@ public static class PageRangeParser
     /// <summary>
     /// Parse page range string like "1,3,5-7" into a sorted, deduped list of 1-based page numbers.
     /// Empty/null returns all pages (caller decides).
+    /// Full-width Chinese punctuation and digits are normalized before parsing.
     /// Out of range pages are filtered. Returns (pages, warning).
     /// </summary>
     public static (List<int> pages, string? warning) Parse(string? range, int totalPages)
@@ -17,7 +19,8 @@ public static class PageRangeParser
             return (Enumerable.Range(1, totalPages).ToList(), null);
         }
 
-        var parts = range.Split(',', ' ', ';');
+        var normalized = Normalize(range);
+        var parts = normalized.Split(',', ' ', ';');
         bool anyValid = false;
         foreach (var part in parts)
         {
@@ -55,5 +58,37 @@ public static class PageRangeParser
             throw new FormatException($"所选页码全部超出文档范围（共{totalPages}页）");
 
         return (valid, warning);
+    }
+
+    /// <summary>
+    /// 把输入法打出的全角/中文标点和全角数字归一化成半角，
+    /// 避免 "14，65，67" 这类写法（中文逗号）被当成一个整体解析失败。
+    /// </summary>
+    private static string Normalize(string s)
+    {
+        var sb = new StringBuilder(s.Length);
+        foreach (var ch in s)
+        {
+            switch (ch)
+            {
+                case '，': sb.Append(','); break;
+                case '、': sb.Append(','); break;
+                case '；': sb.Append(';'); break;
+                case '－':
+                case '—':
+                case '–':
+                case '～':
+                case '至': sb.Append('-'); break;
+                case '（': sb.Append('('); break;
+                case '）': sb.Append(')'); break;
+                default:
+                    if (ch >= '０' && ch <= '９')
+                        sb.Append((char)('0' + (ch - '０')));
+                    else
+                        sb.Append(ch);
+                    break;
+            }
+        }
+        return sb.ToString();
     }
 }
